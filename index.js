@@ -6,7 +6,11 @@ app.use(express.json());
 let todos = [];
 
 app.get("/", (req, res) => {
-  res.send("My First CRUD API");
+  res.json({
+    name: "Task API",
+    version: "1.0",
+    endpoints: ["/tasks"]
+  });
 });
 
 app.get("/todos", (req, res) => {
