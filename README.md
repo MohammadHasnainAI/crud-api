@@ -36,5 +36,6 @@ SELECT * FROM tasks;
 ```
 
 ## Screenshot
+## Database Screenshot
 
-(Add your DB Browser screenshot here.)
+![Database Screenshot](database.png)
