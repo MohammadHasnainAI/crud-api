@@ -1,7 +1,7 @@
 {
   "name": "crud-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple CRUD API built with Node.js, Express, PostgreSQL, and Docker.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -13,10 +13,20 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.0",
     "better-sqlite3": "^13.0.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "pg": "^8.22.0",
-    "sqlite3": "^6.0.1"
-  }
+    "sqlite3": "^6.0.1",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MohammadHasnainAI/crud-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MohammadHasnainAI/crud-api/issues"
+  },
+  "homepage": "https://github.com/MohammadHasnainAI/crud-api#readme"
 }
