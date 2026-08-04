@@ -1,6 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const { createClient } = require("@supabase/supabase-js");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./openapi.json");
 
 const app = express();
 app.use(express.json());
@@ -9,7 +11,10 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Reusable Auth Middleware (Stage 4)
+// Serve Swagger Documentation (Stage 5)
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Reusable Auth Middleware
 const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -67,7 +72,7 @@ app.get("/public/info", (req, res) => {
   return res.status(200).json({ message: "Welcome stranger! This info is public." });
 });
 
-// GET /protected/profile (Uses Middleware)
+// GET /protected/profile
 app.get("/protected/profile", requireAuth, (req, res) => {
   return res.status(200).json({
     id: req.user.id,
@@ -76,12 +81,12 @@ app.get("/protected/profile", requireAuth, (req, res) => {
   });
 });
 
-// GET /protected/dashboard (Second Protected Route)
+// GET /protected/dashboard
 app.get("/protected/dashboard", requireAuth, (req, res) => {
   return res.status(200).json({ message: `Welcome to your dashboard, ${req.user.email}!` });
 });
 
-// POST /auth/logout (Protected Route)
+// POST /auth/logout
 app.post("/auth/logout", requireAuth, async (req, res) => {
   await supabase.auth.signOut();
   return res.status(204).send();
