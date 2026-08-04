@@ -1,47 +1,15 @@
+require("dotenv").config();
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
+const db = require("./database");
 
 const app = express();
 app.use(express.json());
-
-// Connect to SQLite database
-const db = new sqlite3.Database("./tasks.db", (err) => {
-  if (err) {
-    console.error(err.message);
-  } else {
-    console.log("Connected to SQLite database.");
-  }
-});
-
-// Create table with title and done columns
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      done INTEGER DEFAULT 0
-    )
-  `);
-
-  db.get("SELECT COUNT(*) AS count FROM tasks", (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return;
-    }
-
-    if (row.count === 0) {
-      db.run("INSERT INTO tasks (title, done) VALUES ('Learn Node.js', 0)");
-      db.run("INSERT INTO tasks (title, done) VALUES ('Build CRUD API', 0)");
-      db.run("INSERT INTO tasks (title, done) VALUES ('Learn SQLite', 0)");
-    }
-  });
-});
 
 // Home Route
 app.get("/", (req, res) => {
   res.json({
     name: "Task API",
-    version: "2.0",
+    version: "3.0",
     endpoints: ["/tasks", "/health"]
   });
 });
@@ -54,49 +22,40 @@ app.get("/health", (req, res) => {
 });
 
 // Get All Tasks
-app.get("/tasks", (req, res) => {
-  db.all("SELECT * FROM tasks", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+app.get("/tasks", async (req, res) => {
+  try {
+    const result = await db.query("SELECT * FROM tasks ORDER BY id");
 
-    const tasks = rows.map(task => ({
-      id: task.id,
-      title: task.title,
-      done: Boolean(task.done)
-    }));
-
-    res.status(200).json(tasks);
-  });
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Get Single Task
-app.get("/tasks/:id", (req, res) => {
-  db.get(
-    "SELECT * FROM tasks WHERE id = ?",
-    [req.params.id],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+app.get("/tasks/:id", async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT * FROM tasks WHERE id = $1",
+      [req.params.id]
+    );
 
-      if (!row) {
-        return res.status(404).json({
-          error: "Task not found"
-        });
-      }
-
-      res.json({
-        id: row.id,
-        title: row.title,
-        done: Boolean(row.done)
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Task not found"
       });
     }
-  );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
 });
 
 // Add Task
-app.post("/tasks", (req, res) => {
+app.post("/tasks", async (req, res) => {
   const { title, done = false } = req.body;
 
   if (!title) {
@@ -105,26 +64,25 @@ app.post("/tasks", (req, res) => {
     });
   }
 
-  db.run(
-    "INSERT INTO tasks (title, done) VALUES (?, ?)",
-    [title, done ? 1 : 0],
-    function (err) {
-      if (err) {
-        return res.status(500).json({
-          error: err.message
-        });
-      }
+  try {
+    const result = await db.query(
+      "INSERT INTO tasks(title, done) VALUES($1, $2) RETURNING id",
+      [title, done]
+    );
 
-      res.status(201).json({
-        message: "Task added",
-        id: this.lastID
-      });
-    }
-  );
+    res.status(201).json({
+      message: "Task added",
+      id: result.rows[0].id
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
 });
 
 // Update Task
-app.put("/tasks/:id", (req, res) => {
+app.put("/tasks/:id", async (req, res) => {
   const { title, done } = req.body;
 
   if (!title) {
@@ -133,55 +91,53 @@ app.put("/tasks/:id", (req, res) => {
     });
   }
 
-  db.run(
-    "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
-    [title, done ? 1 : 0, req.params.id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({
-          error: err.message
-        });
-      }
+  try {
+    const result = await db.query(
+      "UPDATE tasks SET title=$1, done=$2 WHERE id=$3",
+      [title, done, req.params.id]
+    );
 
-      if (this.changes === 0) {
-        return res.status(404).json({
-          error: "Task not found"
-        });
-      }
-
-      res.json({
-        message: "Task updated"
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: "Task not found"
       });
     }
-  );
+
+    res.json({
+      message: "Task updated"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
 });
 
 // Delete Task
-app.delete("/tasks/:id", (req, res) => {
-  db.run(
-    "DELETE FROM tasks WHERE id = ?",
-    [req.params.id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({
-          error: err.message
-        });
-      }
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    const result = await db.query(
+      "DELETE FROM tasks WHERE id=$1",
+      [req.params.id]
+    );
 
-      if (this.changes === 0) {
-        return res.status(404).json({
-          error: "Task not found"
-        });
-      }
-
-      res.status(204).send();
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        error: "Task not found"
+      });
     }
-  );
+
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
 });
 
 // Start Server
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

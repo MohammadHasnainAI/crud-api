@@ -1,27 +1,50 @@
-# Task API with SQLite
+# CRUD API with PostgreSQL & Docker
 
-## Description
-This project is a CRUD API built with Node.js, Express, and SQLite.
+A simple CRUD API built with Node.js, Express, PostgreSQL, and Docker.
 
-## Why SQLite?
-SQLite is lightweight, easy to use, and stores data in a single file.
+## Features
 
-## Database
-The database file is:
-```
-tasks.db
-```
+- Create tasks
+- Read all tasks
+- Read a single task
+- Update tasks
+- Delete tasks
+- PostgreSQL database
+- Docker Compose support
+- Environment variables using .env
 
-## How to Run
+## Technologies
+
+- Node.js
+- Express
+- PostgreSQL
+- Docker
+- Docker Compose
+
+## Setup
+
+1. Clone the repository
+2. Install dependencies
 
 ```bash
 npm install
+```
+
+3. Create a `.env` file from `.env.example`
+
+4. Start PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+5. Start the server
+
+```bash
 node index.js
 ```
 
-The database is automatically created if it does not exist.
-
-## API Endpoints
+## API
 
 - GET /tasks
 - GET /tasks/:id
@@ -29,13 +52,10 @@ The database is automatically created if it does not exist.
 - PUT /tasks/:id
 - DELETE /tasks/:id
 
-## Example SQL Query
+## Docker
 
-```sql
-SELECT * FROM tasks;
-```
+The PostgreSQL database runs inside Docker and stores data using a Docker volume, so the data remains after restarting the container.
 
-## Screenshot
-## Database Screenshot
+## Author
 
-![Database Screenshot](database.png)
+Mohammad Hasnain
